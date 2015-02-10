@@ -39,7 +39,7 @@
       var segmentKey = {% if 'production' == site.env %} 'aaB6w2BsRwUcGbRSUY7X22FPAa1NL3BL' {% else %} 'WqErZyd56ob3pmMDnko55hNgFt8B4Zox' {% endif %};
       !function(){var analytics=window.analytics=window.analytics||[];if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","group","track","ready","alias","page","once","off","on"];analytics.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);analytics.push(e);return analytics}};for(var t=0;t<analytics.methods.length;t++){var e=analytics.methods[t];analytics[e]=analytics.factory(e)}analytics.load=function(t){var e=document.createElement("script");e.type="text/javascript";e.async=!0;e.src=("https:"===document.location.protocol?"https://":"http://")+"cdn.segment.com/analytics.js/v1/"+t+"/analytics.min.js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(e,n)};analytics.SNIPPET_VERSION="3.0.0";
         analytics.load(segmentKey);
-        analytics.page();
+        analytics.page(document.title);
       }}();
     </script>
 </head>
@@ -55,7 +55,7 @@
       })();
     </script>
 
-    <div class="banner">
+    <div class="banner blog-banner">
         <div class="container banner-container">
 
             <i class="icon-budicon-697"></i>
@@ -65,9 +65,27 @@
         </div>
     </div>
 
-    <div id="container" class="container">
-        {{ content }}
+    <!-- Post overlay -->
+    <div class='post-overlay'>
+        <div class='container'>
+            <div class='blog-post'>
+                <!-- Post content to be loaded here -->
+                <img class='post-spinner' src='img/spinner-icon.png'>
+            </div>
+        </div>
     </div>
+
+    <!-- Posts -->
+    <section class='posts'>
+        <div class='container'>
+
+            <div class='row'>
+                {{ content }}
+            </div>
+            
+        </div>
+    </section>
+
 
 
     <div class="container">
@@ -109,7 +127,7 @@
 
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-    <script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+    <script src="https://google-code-prettify.googlecode.com/svn/loader/prettify.js"></script>
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
     <script type="text/javascript">
       (function () {
@@ -207,6 +225,144 @@
             s.src = '//' + disqus_shortname + '.disqus.com/count.js';
             (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
         }());
+    </script>
+
+    <script>
+
+        var $postOverlay,
+            $blogPost,
+            pages = {{paginator.total_pages}},
+            pagesFetched = 1,
+            fetchingPage = false,
+            $spinner;
+
+        $(document).ready(function(){
+
+                $postOverlay = $('.post-overlay');
+                $blogPost = $('.post-overlay').find('.blog-post');
+                $spinner = $('.post-overlay').find('.blog-post .post-spinner');
+
+                //$('.posts .post-link').click(onPostClick);
+                $postOverlay.click(hidePostOverlay);
+
+                $(window).scroll(onScroll);
+                window.onhashchange = onHashChange;
+
+                checkHash();
+        });
+
+
+        function onHashChange(event){ 
+            checkHash();
+        }
+
+        function checkHash(){
+            var url = window.location.hash.slice(1).replace('_', '').slice(1);
+            if (url === ''){
+                hidePost();
+            }else{
+                loadPost(window.location.pathname + url);
+            }
+        }
+
+        function loadPost(postUrl){
+
+            $postOverlay.show();
+            $postOverlay.scrollTop(0);
+
+            $('body').css('overflow', 'hidden');
+            $blogPost.html($spinner);
+
+            $.get(postUrl, function(postHtml){
+
+                $spinner.detach();
+                $blogPost.html(postHtml);
+
+                if (typeof FB !== 'undefined'){
+                    FB.XFBML.parse();
+                }
+
+                if (typeof twttr !== 'undefined'){
+                    twttr.widgets.load();
+                }
+
+                if( typeof DISQUS !== 'undefined'){
+                    DISQUS.reset({
+                        reload: true,
+                        config: function () {  
+                            this.page.url = 'https://auth0.com' + postUrl;
+                            console.log(this.page.url);
+                        }
+                    });
+                }
+
+                $postOverlay.find('pre').addClass("prettyprint");
+                prettyPrint();
+
+                $(window).bind('keyup', onKeyPress);
+            });
+
+        }
+
+        function hidePost(){
+
+            $postOverlay.hide();
+            $('body').css('overflow', 'scroll');
+            $(window).unbind('keyup', onKeyPress);
+        }
+
+        function hidePostOverlay(event){
+
+            if(event.target === event.currentTarget){
+                event.preventDefault();
+                window.location.hash = '_';
+            }
+        }
+
+
+        function onScroll(){
+        
+            if($('body').height() - (window.scrollY + $(window).height()) < 500 && !fetchingPage){
+                fetchNextPage();
+                fetchingPage = true;
+            }
+        }
+
+        function onKeyPress(event){
+
+            var LEFT = 37,
+                RIGHT = 39,
+                ESC = 27;
+
+            if(event.which === LEFT){
+                var next = $postOverlay.find('.post-link.prev').attr('href');
+            }else if(event.which === RIGHT){
+                var next = $postOverlay.find('.post-link.next').attr('href');
+            }else if(event.which === ESC){
+                var next = '#_';
+            }
+
+            if (next){
+                window.location.hash = next;
+            }
+
+        }
+
+        function fetchNextPage(){
+
+            var page = pagesFetched + 1;
+
+            if(page <= pages){
+                $.get('page'+page+'/', function(html){
+                    var $posts = $(html).filter('.posts').find('.container > .row > div');
+                    //$posts.find('.post-link').click(onPostClick);
+                    $('.posts > .container > .row').append($posts);
+                    pagesFetched++;
+                    fetchingPage = false;
+                });
+            }
+        }
+    
     </script>
 </body>
 </html>

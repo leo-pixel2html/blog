@@ -1,7 +1,6 @@
 {% comment %}
 This is the template used to show an entry in archives.
 Archives include: "by tags" and "by time" archives.
-{% endcomment %}
 <li class="post">
   <div class="blog-post">
     <div class="inner">
@@ -21,3 +20,52 @@ Archives include: "by tags" and "by time" archives.
     </div>
   </div>
 </li>
+{% endcomment %}
+
+
+{% if post.category %}
+    {% assign category = post.category %}
+{% else %}
+    {% assign category = 'other' %}
+{% endif %}
+
+<div class='{% if post.featured %}col-sm-8{% else %}col-sm-4{% endif %}'>
+    <a href='#{{post.url}}' class='post-link'>
+
+        <article
+            class='post-tile {{ category | replace:' ','-'}} {% if post.featured %}highlight{% endif %} {% if post.featured-img-thumb %}custom{% endif %}'>
+
+            <div class='category-icon'
+                {% if post.featured-img-thumb %}style='background-image:url({{post.featured-img-thumb}});'{% endif %}>
+                <div class='overlay'></div>
+            </div>
+
+            <div class='post-text'>
+
+                <div class='auth0r'>
+                    <img src='{{post.author.avatar}}'>
+                    <span class='by'>
+                        by <strong>{{post.author.name}}</strong>
+                    </span>
+                    <span>
+                        Published: {{ post.date | date: "%B %d, %Y" }}
+                    </span>
+                </div>
+
+                <span class='category'>{{category | upcase}}</span>
+                <h2>
+                    {{ post.title | truncate: 70}}
+                </h2>
+                <p>
+                    {% if post.featured %}
+                        {% assign excerptlen = 250 %}
+                    {% else %}
+                        {% assign excerptlen = 100 %}
+                    {% endif %}
+
+                    {{ post.excerpt | strip_html |  truncate: excerptlen}}
+                </p>
+            </div>
+        </article>
+    </a>
+</div>

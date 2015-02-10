@@ -1,0 +1,19 @@
+
+<!-- Post nav bar -->
+<div class='nav'>
+    <a href='#_' class='grid'>
+        <span class="icon icon-budicon-384"</span>
+    </a>
+    {% if page.previous %}
+        <a href='#{{page.previous.url}}' class='prev post-link'>
+            <span class="icon icon-budicon-463"></span>
+            <span class='text'>{{page.previous.title | upcase | truncate: 50, '...'}}</span>
+        </a>
+    {% endif %}
+    {% if page.next %}
+        <a href='#{{page.next.url}}' class='next post-link'>
+            <span class="icon icon-budicon-461"></span>
+            <span class='text'>{{page.next.title | upcase | truncate: 50, '...'}}</span>
+        </a>
+    {% endif %}
+</div>
